@@ -28,7 +28,7 @@ We provide standalone Python code for generating and detecting text with a water
 To generate `m` tokens of text from a model (e.g., `facebook/opt-1.3b`) with watermark key `42`, run:
 
 ```
-python demo/generate.py data/in/document.txt --model facebook/opt-iml-1.3b --key 42 > data/out/output.txt
+python demo/generate.py data/in/document.txt --model facebook/opt-iml-1.3b --key 42 --output data/out/output.txt --verbose
 ```
 
 Checking for the watermark requires a watermark key (in this case, `42`) and the model tokenizer, but crucially it does not require access to the model itself. To test for a watermark in a given text document `output.txt`, run

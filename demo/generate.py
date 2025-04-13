@@ -20,6 +20,11 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
     tokenizer = model.config.tokenizer
     eos_token_id = model.config.eos_token_id
 
+    # Store the previous text for word-by-word printing
+    previous_text = tokenizer.decode(inputs[0], skip_special_tokens=True)
+    if verbose:
+        print("Prompt:", previous_text, end="", flush=True)
+
     i = 0
     # Continue generating until EOS token or max_length is reached
     while i < max_length:
@@ -39,9 +44,21 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
             break
 
         inputs = torch.cat([inputs, token], dim=-1)
+
+        # Print the newly generated token
+        if verbose:
+            current_text = tokenizer.decode(
+                inputs[0], skip_special_tokens=True)
+            new_text = current_text[len(previous_text):]
+            print(new_text, end="", flush=True)
+            previous_text = current_text
+
         past = output.past_key_values
         attn = torch.cat([attn, attn.new_ones((attn.shape[0], 1))], dim=-1)
         i += 1
+
+    if verbose:
+        print()  # Add a newline at the end
 
     return inputs.detach().cpu()
 
@@ -76,11 +93,19 @@ def main(args):
 
     # Pass in a large max_length as safety parameter, but it should stop at EOL
     watermarked_tokens = generate_shift(
-        model, tokens, len(tokenizer), args.n, args.key)[0]
+        model, tokens, len(tokenizer), args.n, args.key, verbose=args.verbose)[0]
+
     watermarked_text = tokenizer.decode(
         watermarked_tokens, skip_special_tokens=True)
 
-    print(watermarked_text)
+    # If output file is specified, save the watermarked text there
+    if args.output:
+        try:
+            with open(args.output, 'w') as f:
+                f.write(watermarked_text)
+            print(f"\nWatermarked text saved to '{args.output}'")
+        except Exception as e:
+            print(f"\nError writing to output file: {e}")
 
 
 if __name__ == '__main__':
@@ -96,5 +121,9 @@ if __name__ == '__main__':
                         help='a key for generating the random watermark sequence')
     parser.add_argument('--seed', default=0, type=int,
                         help='a seed for reproducibile randomness')
+    parser.add_argument('--output', type=str,
+                        help='file to save the watermarked text to (optional)')
+    parser.add_argument('--verbose', action='store_true', default=False,
+                        help='print generation word-by-word')
 
     main(parser.parse_args())
