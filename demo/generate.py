@@ -20,10 +20,11 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
     tokenizer = model.config.tokenizer
     eos_token_id = model.config.eos_token_id
 
-    # Store the previous text for word-by-word printing
-    previous_text = tokenizer.decode(inputs[0], skip_special_tokens=True)
-    if verbose:
-        print("Prompt:", previous_text, end="", flush=True)
+    # Store only the initial input length to exclude prompt from output
+    prompt_length = inputs.size(1)
+
+    # Initialize the output text
+    previous_text = ""
 
     i = 0
     # Continue generating until EOS token or max_length is reached
@@ -48,7 +49,7 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
         # Print the newly generated token
         if verbose:
             current_text = tokenizer.decode(
-                inputs[0], skip_special_tokens=True)
+                inputs[0, prompt_length:], skip_special_tokens=True)
             new_text = current_text[len(previous_text):]
             print(new_text, end="", flush=True)
             previous_text = current_text
@@ -60,7 +61,8 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
     if verbose:
         print()  # Add a newline at the end
 
-    return inputs.detach().cpu()
+    # Return only the generated tokens (exclude the prompt)
+    return inputs[:, prompt_length:].detach().cpu()
 
 
 def exp_sampling(probs, u):
@@ -91,19 +93,20 @@ def main(args):
     tokens = tokenizer.encode(
         prompt_text, return_tensors='pt', truncation=True, max_length=2048)
 
-    # Pass in a large max_length as safety parameter, but it should stop at EOL
-    watermarked_tokens = generate_shift(
+    # Generate tokens with watermarking
+    generated_tokens = generate_shift(
         model, tokens, len(tokenizer), args.n, args.key, verbose=args.verbose)[0]
 
-    watermarked_text = tokenizer.decode(
-        watermarked_tokens, skip_special_tokens=True)
+    # Decode the generated tokens
+    generated_text = tokenizer.decode(
+        generated_tokens, skip_special_tokens=True)
 
-    # If output file is specified, save the watermarked text there
+    # If output file is specified, save only the generated text
     if args.output:
         try:
             with open(args.output, 'w') as f:
-                f.write(watermarked_text)
-            print(f"\nWatermarked text saved to '{args.output}'")
+                f.write(generated_text)
+            print(f"\nGenerated text saved to '{args.output}'")
         except Exception as e:
             print(f"\nError writing to output file: {e}")
 

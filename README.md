@@ -37,48 +37,4 @@ Checking for the watermark requires a watermark key (in this case, `42`) and the
 python demo/detect.py data/out/output.txt --tokenizer facebook/opt-iml-1.3b --key 42
 ```
 
-Alternatively, you can use the javascript detector implemented in `demo/detect.js` which runs much faster (this is also the detector used for the [web demo](https://crfm.stanford.edu/2023/07/30/watermarking.html)).
-
-## Reproducing experiments from the paper
-
-The [experiments](experiments) directory contains code for reproducing the experimental results we report in the paper (in particular, Experiments 1-7 as described in Section 3).
-We use `experiments/c4-experiment.py` to run the news-like C4 dataset experiments (Experiments 1-6) and `experiments/instruct-experiment.py` to run the Alpaca instruction evaluation dataset experiments (Experiment 7).
-In particular,
-
-```
-python experiments/{c4,instruct}-experiment.py --save results.p
-```
-
-will save experiment settings and results as a Python dict.
-See `experiments/analyze.py` for a minimal example of how to parse this dict.
-
-We include shell scripts for reproducing all experiments in [experiments/scripts](experiments/scripts). You will need to specify certain experiment settings in order to run most of the scripts.
-For example, to reproduce Figure 2a in the paper using the OPT-1.3B model, run
-
-```
-./experiments/scripts/experiment-1.sh <save directory path> facebook/opt-1.3b
-```
-
-To reproduce Figure 4b in the paper using the LLaMA-7B model with `m = 35`, run
-
-```
-./experiments/scripts/experiment-3.sh arxiv-results/experiment-3/llama huggyllama/llama-7b 35
-```
-
-And as a final example, to reproduce Figure 9a in the paper using the LLaMA-7B model and with
-French as the roundtrip language, run
-
-```
-./experiments/scripts/experiment-6.sh arxiv-results/experiment-6/opt facebook/opt-1.3b french
-```
-
----
-
-```bib
-@article{kuditipudi2023robust,
-  title={Robust Distortion-free Watermarks for Language Models},
-  author={Kuditipudi, Rohith and Thickstun, John and Hashimoto, Tatsunori and Liang, Percy},
-  journal={arXiv preprint arXiv:2307.15593},
-  year={2023}
-}
-```
+Alternatively, you can use the javascript detector implemented in `demo/detect.js`.
