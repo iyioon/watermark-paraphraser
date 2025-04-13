@@ -1,0 +1,68 @@
+# Watermark Detection Analysis Report
+
+## Summary
+
+- Files analyzed: 3
+- Keys tested: [100, 101, 102]
+- Correct identifications: 3 out of 3
+- Accuracy: 100.00%
+
+## Detailed Results
+
+### email-1_key101.txt
+
+- Actual key: 101
+- Detected key: 101
+- Correct identification: Yes
+
+#### P-values for each key
+
+|   Key |   P-value |
+|------:|----------:|
+|   100 |  0.19802  |
+|   101 |  0.009901 |
+|   102 |  0.861386 |
+
+The key with the lowest p-value is: **101**
+
+✅ Correctly identified the watermark key.
+
+### email-1_key100.txt
+
+- Actual key: 100
+- Detected key: 100
+- Correct identification: Yes
+
+#### P-values for each key
+
+|   Key |   P-value |
+|------:|----------:|
+|   100 |  0.009901 |
+|   101 |  1        |
+|   102 |  0.376238 |
+
+The key with the lowest p-value is: **100**
+
+✅ Correctly identified the watermark key.
+
+### email-1_key102.txt
+
+- Actual key: 102
+- Detected key: 102
+- Correct identification: Yes
+
+#### P-values for each key
+
+|   Key |   P-value |
+|------:|----------:|
+|   100 |  0.336634 |
+|   101 |  0.39604  |
+|   102 |  0.009901 |
+
+The key with the lowest p-value is: **102**
+
+✅ Correctly identified the watermark key.
+
+## Visualization
+
+A heatmap visualization of the p-values has been saved alongside this report.

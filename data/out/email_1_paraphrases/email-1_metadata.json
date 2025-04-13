@@ -1,0 +1,26 @@
+[
+  {
+    "version": 1,
+    "key": 100,
+    "seed": 42,
+    "output_file": "data/out/email_1_paraphrases/email-1_key100.txt",
+    "model": "facebook/opt-iml-1.3b",
+    "n": 256
+  },
+  {
+    "version": 2,
+    "key": 101,
+    "seed": 43,
+    "output_file": "data/out/email_1_paraphrases/email-1_key101.txt",
+    "model": "facebook/opt-iml-1.3b",
+    "n": 256
+  },
+  {
+    "version": 3,
+    "key": 102,
+    "seed": 44,
+    "output_file": "data/out/email_1_paraphrases/email-1_key102.txt",
+    "model": "facebook/opt-iml-1.3b",
+    "n": 256
+  }
+]

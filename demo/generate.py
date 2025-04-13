@@ -34,7 +34,7 @@ Paraphrased version:
 def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=True):
     rng = mersenne_rng(key)
     xi = torch.tensor([rng.rand()
-                      for _ in range(n*vocab_size)]).view(n, vocab_size)
+                      for _ in range(n * vocab_size)]).view(n, vocab_size)
     shift = torch.randint(n, (1,))
 
     inputs = prompt.to(model.device)
@@ -53,9 +53,9 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
 
     # Add separator line before generation starts
     if verbose:
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("GENERATING TEXT:")
-        print("-"*80 + "\n")
+        print("-" * 80 + "\n")
 
     i = 0
     # Continue generating until EOS token or max_length is reached
@@ -69,7 +69,7 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
 
         probs = torch.nn.functional.softmax(
             output.logits[:, -1, :vocab_size], dim=-1).cpu()
-        token = exp_sampling(probs, xi[(shift+i) % n, :]).to(model.device)
+        token = exp_sampling(probs, xi[(shift + i) % n, :]).to(model.device)
 
         # Stop if we generated an EOS token
         if token.item() == eos_token_id:
@@ -90,16 +90,16 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
         i += 1
 
     if verbose:
-        print("\n" + "-"*80)
+        print("\n" + "-" * 80)
         print("GENERATION COMPLETE")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
 
     # Return only the generated tokens (exclude the prompt)
     return inputs[:, prompt_length:].detach().cpu()
 
 
 def exp_sampling(probs, u):
-    return torch.argmax(u ** (1/probs), axis=1).unsqueeze(-1)
+    return torch.argmax(u ** (1 / probs), axis=1).unsqueeze(-1)
 
 
 def main(args):

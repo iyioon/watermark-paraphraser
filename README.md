@@ -38,3 +38,29 @@ python demo/detect.py data/out/email-1.txt --tokenizer facebook/opt-iml-1.3b --k
 ```
 
 Alternatively, you can use the javascript detector implemented in `demo/detect.js`.
+
+## Experiment
+
+To generate multiple paraphrased version of the same text (using different keys), run:
+
+```
+python demo/generate_multiple_paraphrases.py data/in/email-1.txt --output-dir data/out/email_1_paraphrases --num-versions 3 --model facebook/opt-iml-1.3b --verbose
+```
+
+This will generate 3 paraphrased versions of the input text `email-1.txt` and save them in the directory `data/out/email_1_paraphrases`. The generated files will be named `email-1_100.txt`, `email-1_101.txt`, and `email-1_102.txt`. `email-1_metadata.txt` will be available in the same directory.
+
+To test the watermark in the generated paraphrased versions, run:
+
+```
+python demo/determine_watermarked_key.py data/out/email_1_paraphrases/email-1_key100.txt --keys 100 101 102 --verbose
+```
+
+This should return the key `100` as the watermark key for the file `email-1_key100.txt`.
+
+## Analysis
+
+To batch test the folder `data/out/email_1_paraphrases` for the watermark keys, run:
+
+```
+python demo/analyse.py data/out/email_1_paraphrases
+```
