@@ -1,15 +1,16 @@
-import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Suppress the HuggingFace tokenizers warning
-import sys
-import argparse
-import time
-import numpy as np
-from transformers import AutoTokenizer
-from mersenne import mersenne_rng
-from tqdm import tqdm
-import torch
-
 import pyximport
+import torch
+from tqdm import tqdm
+from mersenne import mersenne_rng
+from transformers import AutoTokenizer
+import numpy as np
+import time
+import argparse
+import sys
+import os
+# Suppress the HuggingFace tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 pyximport.install(reload_support=True, language_level=sys.version_info[0],
                   setup_args={'include_dirs': np.get_include()})
 
@@ -59,6 +60,9 @@ def main(args):
     t0 = time.time()
     pval = permutation_test(tokens, args.key, args.n,
                             len(tokens), len(tokenizer))
+
+    treshold = 0.01
+
     print('p-value: ', pval)
     print(f'(elapsed time: {time.time()-t0}s)')
 

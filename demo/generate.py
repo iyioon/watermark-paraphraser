@@ -6,6 +6,30 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from mersenne import mersenne_rng
 from device_utils import get_device
 
+EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """
+I need you to paraphrase the following email while preserving its exact meaning.
+
+Instructions:
+1. Rewrite using different vocabulary and phrasing
+2. Maintain EXACTLY the same:
+   - Email structure (greeting, body paragraphs, closing, signature)
+   - All factual information, dates, numbers, and names
+   - Professional tone and formality level
+   - All contact information and references
+
+Important guidelines:
+- Keep the same paragraph structure
+- Preserve any confidentiality notices or disclaimers exactly
+- Do not add, remove, or modify any substantive information
+- Maintain approximately the same length
+- Start with the same type of greeting and end with similar closing
+
+Original email:
+{text}
+
+Paraphrased version:
+"""
+
 
 def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=True):
     rng = mersenne_rng(key)
@@ -91,13 +115,16 @@ def main(args):
     # Read text from the input document file
     try:
         with open(args.document, 'r') as f:
-            prompt_text = f.read()
+            input_text = f.read()
     except FileNotFoundError:
         print(f"Error: Document file '{args.document}' not found.")
         return
     except Exception as e:
         print(f"Error reading document file: {e}")
         return
+
+    # Create a paraphrasing prompt
+    prompt_text = EMAIL_PARAPHRASE_PROMPT_TEMPLATE.format(text=input_text)
 
     tokens = tokenizer.encode(
         prompt_text, return_tensors='pt', truncation=True, max_length=2048)
