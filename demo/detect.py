@@ -53,7 +53,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='test for a watermark in a text document')
     parser.add_argument('document',type=str, help='a file containing the document to test')
-    parser.add_argument('--tokenizer',default='facebook/opt-1.3b',type=str,
+    parser.add_argument('--tokenizer',default='facebook/opt-iml-1.3b',type=str,
             help='a HuggingFace model id of the tokenizer used by the watermarked model')
     parser.add_argument('--n',default=256,type=int,
             help='the length of the watermark sequence')
