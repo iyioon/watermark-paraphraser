@@ -72,7 +72,7 @@ def exp_sampling(probs, u):
 
 def main(args):
     torch.manual_seed(args.seed)
-    device = get_device(args.device)
+    device = get_device()
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForCausalLM.from_pretrained(args.model).to(device)
