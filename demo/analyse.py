@@ -8,6 +8,8 @@ import pandas as pd
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 import seaborn as sns
+import base64
+from io import BytesIO
 
 # Import the function to determine watermarked keys
 from determine_watermarked_key import determine_watermarked_keys
@@ -154,14 +156,88 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="faceb
     return results
 
 
+def create_heatmap_base64(results):
+    """
+    Create a heatmap visualization and return as base64-encoded string for embedding in Markdown.
+
+    Args:
+        results (dict): Analysis results
+
+    Returns:
+        str: Base64-encoded image data or None if visualization could not be created
+    """
+    try:
+        # Create DataFrame for heatmap
+        data = []
+        for filename, file_result in results['file_results'].items():
+            if 'p_values' not in file_result:
+                continue
+
+            for key, p_value in file_result['p_values'].items():
+                data.append({
+                    'Filename': filename,
+                    'Key': key,
+                    'P-value': p_value,
+                    'Actual Key': file_result.get('actual_key'),
+                    'Is Actual Key': key == file_result.get('actual_key')
+                })
+
+        if not data:
+            return None
+
+        df = pd.DataFrame(data)
+
+        # Create heatmap
+        plt.figure(figsize=(12, max(8, len(results['file_results']) * 0.5)))
+
+        # Create a pivot table for the heatmap
+        pivot_data = df.pivot(
+            index='Filename', columns='Key', values='P-value')
+
+        # Create the heatmap
+        ax = sns.heatmap(
+            pivot_data,
+            annot=True,
+            fmt='.3g',
+            cmap="YlGnBu_r",
+            cbar_kws={'label': 'P-value'},
+            linewidths=.5
+        )
+
+        plt.title('P-values for Each File and Key Combination')
+        plt.tight_layout()
+
+        # Save figure to memory buffer
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        plt.close()
+
+        # Encode the image
+        buffer.seek(0)
+        image_png = buffer.getvalue()
+        buffer.close()
+
+        # Encode to base64 string
+        graphic = base64.b64encode(image_png).decode('utf-8')
+
+        return graphic
+
+    except Exception as e:
+        print(f"Error creating heatmap visualization: {e}")
+        return None
+
+
 def save_analysis_report(results, output_path):
     """
-    Save the analysis results to a file.
+    Save the analysis results to a Markdown file with embedded visualization.
 
     Args:
         results (dict): Analysis results
         output_path (str): Path to save the report
     """
+    # Create heatmap visualization as base64 string
+    heatmap_base64 = create_heatmap_base64(results)
+
     with open(output_path, 'w') as f:
         f.write("# Watermark Detection Analysis Report\n\n")
 
@@ -174,6 +250,15 @@ def save_analysis_report(results, output_path):
             f.write(
                 f"- Correct identifications: {results['correct_identifications']} out of {results['total_files']}\n")
             f.write(f"- Accuracy: {results['accuracy'] * 100:.2f}%\n\n")
+
+        # Visualization - embedded directly in the Markdown
+        if heatmap_base64:
+            f.write("## Visualization\n\n")
+            f.write("P-values heatmap for each file and key combination:\n\n")
+            f.write(
+                f"![P-values Heatmap](data:image/png;base64,{heatmap_base64})\n\n")
+            f.write(
+                "*Lower p-values (darker colors) indicate stronger evidence of watermarking with that key.*\n\n")
 
         # Results for each file
         f.write("## Detailed Results\n\n")
@@ -210,106 +295,6 @@ def save_analysis_report(results, output_path):
             else:
                 f.write("❌ Failed to correctly identify the watermark key.\n\n")
 
-        # Generate a heatmap for the report
-        try:
-            f.write("## Visualization\n\n")
-            f.write(
-                "A heatmap visualization of the p-values has been saved alongside this report.\n")
-        except Exception as e:
-            f.write(f"Could not generate visualization: {e}\n")
-
-
-def create_visualization(results, output_dir):
-    """
-    Create visualization of the analysis results.
-
-    Args:
-        results (dict): Analysis results
-        output_dir (str): Directory to save the visualization
-    """
-    try:
-        # Create DataFrame for heatmap
-        data = []
-        for filename, file_result in results['file_results'].items():
-            if 'p_values' not in file_result:
-                continue
-
-            for key, p_value in file_result['p_values'].items():
-                data.append({
-                    'Filename': filename,
-                    'Key': key,
-                    'P-value': p_value,
-                    'Actual Key': file_result.get('actual_key'),
-                    'Is Actual Key': key == file_result.get('actual_key')
-                })
-
-        if not data:
-            return
-
-        df = pd.DataFrame(data)
-
-        # Create heatmap
-        plt.figure(figsize=(12, max(8, len(results['file_results']) * 0.5)))
-
-        # Create a pivot table for the heatmap
-        pivot_data = df.pivot(
-            index='Filename', columns='Key', values='P-value')
-
-        # Create the heatmap
-        ax = sns.heatmap(
-            pivot_data,
-            annot=True,
-            fmt='.3g',
-            cmap="YlGnBu_r",
-            cbar_kws={'label': 'P-value'},
-            linewidths=.5
-        )
-
-        plt.title('P-values for Each File and Key Combination')
-        plt.tight_layout()
-
-        # Save the figure
-        output_path = os.path.join(
-            output_dir, 'watermark_analysis_heatmap.png')
-        plt.savefig(output_path)
-        plt.close()
-
-        # Create a summary table for correct vs. detected keys
-        summary_data = []
-        for filename, file_result in results['file_results'].items():
-            if 'actual_key' not in file_result or 'detected_key' not in file_result:
-                continue
-
-            summary_data.append({
-                'Filename': filename,
-                'Actual Key': file_result['actual_key'],
-                'Detected Key': file_result['detected_key'],
-                'Correct': file_result.get('correct', False)
-            })
-
-        if summary_data:
-            summary_df = pd.DataFrame(summary_data)
-
-            plt.figure(figsize=(10, max(6, len(summary_df) * 0.5)))
-
-            # Create a bar chart of correct identifications
-            ax = sns.barplot(x='Filename', y='Correct', data=summary_df)
-
-            plt.title('Watermark Key Detection Accuracy')
-            plt.xlabel('File')
-            plt.ylabel('Correctly Identified')
-            plt.xticks(rotation=45, ha='right')
-            plt.tight_layout()
-
-            # Save the figure
-            output_path = os.path.join(
-                output_dir, 'watermark_detection_accuracy.png')
-            plt.savefig(output_path)
-            plt.close()
-
-    except Exception as e:
-        print(f"Error creating visualization: {e}")
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -327,13 +312,13 @@ def main():
     parser.add_argument('--verbose', action='store_true',
                         help='Print detailed progress information')
     parser.add_argument('--output', type=str,
-                        help='Path to save the analysis report (default: <folder>/watermark_analysis.txt)')
+                        help='Path to save the analysis report (default: <folder>/watermark_analysis.md)')
 
     args = parser.parse_args()
 
     # Set default output path if not provided
     if not args.output:
-        args.output = os.path.join(args.folder, 'watermark_analysis.txt')
+        args.output = os.path.join(args.folder, 'watermark_analysis.md')
 
     try:
         # Analyze the folder
@@ -348,9 +333,6 @@ def main():
 
         # Save analysis report
         save_analysis_report(results, args.output)
-
-        # Create visualization
-        create_visualization(results, os.path.dirname(args.output))
 
         print(f"Analysis complete. Results saved to {args.output}")
         print(

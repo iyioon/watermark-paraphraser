@@ -23,9 +23,7 @@ Also, be sure to set the environment variables `$HF_HOME` and `$TRANSFORMERS_CAC
 
 ## Basic Usage
 
-We provide standalone Python code for generating and detecting text with a watermark, using our recommended instantiation of the watermarking strategies discussed in the paper in `demo/generate.py` and `demo/detect.py`. We also provide the Javascript implementation of the detector `demo/detect.js` used for the [in-browser demo](https://crfm.stanford.edu/2023/07/30/watermarking.html).
-
-To generate `m` tokens of text from a model (e.g., `facebook/opt-1.3b`) with watermark key `42`, run:
+To generate a paraphrased verion of a text from a model (e.g., `facebook/opt-1.3b`) with watermark key `42`, run:
 
 ```
 python demo/generate.py data/in/email-1.txt --model facebook/opt-iml-1.3b --key 42 --output data/out/email-1.txt --verbose
@@ -37,8 +35,6 @@ Checking for the watermark requires a watermark key (in this case, `42`) and the
 python demo/detect.py data/out/email-1.txt --tokenizer facebook/opt-iml-1.3b --key 42
 ```
 
-Alternatively, you can use the javascript detector implemented in `demo/detect.js`.
-
 ## Experiment
 
 To generate multiple paraphrased version of the same text (using different keys), run:
@@ -46,6 +42,8 @@ To generate multiple paraphrased version of the same text (using different keys)
 ```
 python demo/generate_multiple_paraphrases.py data/in/email-1.txt --output-dir data/out/email_1_paraphrases --num-versions 3 --model facebook/opt-iml-1.3b --verbose
 ```
+
+You can also specify the key start value with `--key-range-start`.
 
 This will generate 3 paraphrased versions of the input text `email-1.txt` and save them in the directory `data/out/email_1_paraphrases`. The generated files will be named `email-1_100.txt`, `email-1_101.txt`, and `email-1_102.txt`. `email-1_metadata.txt` will be available in the same directory.
 
@@ -59,8 +57,18 @@ This should return the key `100` as the watermark key for the file `email-1_key1
 
 ## Analysis
 
-To batch test the folder `data/out/email_1_paraphrases` for the watermark keys, run:
+If you want to batch test the emails in a folder in `data/out/email_1_paraphrases`, run:
 
 ```
 python demo/analyse.py data/out/email_1_paraphrases
+```
+
+This will test all combination of email and keys in the folder and saven the results in `data/out/email_1_paraphrases/analysis.md`.
+
+## Automated Testing
+
+To run the above analysis on all the emails in `data/in`, run:
+
+```
+python demo/run_experiments.py
 ```
