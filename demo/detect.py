@@ -1,16 +1,20 @@
-from levenshtein import levenshtein
-import os
-import sys
-import argparse
-import time
-
-import numpy as np
-from transformers import AutoTokenizer
-from mersenne import mersenne_rng
-
 import pyximport
+from tqdm import tqdm  # Add this import
+from mersenne import mersenne_rng
+from transformers import AutoTokenizer
+import numpy as np
+import time
+import argparse
+import sys
+import os
+# Suppress the HuggingFace tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+
 pyximport.install(reload_support=True, language_level=sys.version_info[0],
                   setup_args={'include_dirs': np.get_include()})
+
+from levenshtein import levenshtein
 
 
 def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
@@ -20,7 +24,8 @@ def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
     test_result = detect(tokens, n, k, xi)
 
     p_val = 0
-    for run in range(n_runs):
+    # Progress bar
+    for run in tqdm(range(n_runs), desc="Running permutation tests", total=n_runs):
         xi_alternative = np.random.rand(n, vocab_size).astype(np.float32)
         null_result = detect(tokens, n, k, xi_alternative)
 
@@ -35,7 +40,8 @@ def detect(tokens, n, k, xi, gamma=0.0):
     n = len(xi)
 
     A = np.empty((m-(k-1), n))
-    for i in range(m-(k-1)):
+    # Progress bar
+    for i in tqdm(range(m-(k-1)), desc="Computing detection matrix", leave=False):
         for j in range(n):
             A[i][j] = levenshtein(
                 tokens[i:i+k], xi[(j+np.arange(k)) % n], gamma)
