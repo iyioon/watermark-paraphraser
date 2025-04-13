@@ -27,6 +27,12 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
     # Initialize the output text
     previous_text = ""
 
+    # Add separator line before generation starts
+    if verbose:
+        print("\n" + "="*80)
+        print("GENERATING TEXT:")
+        print("-"*80 + "\n")
+
     i = 0
     # Continue generating until EOS token or max_length is reached
     while i < max_length:
@@ -60,7 +66,9 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=T
         i += 1
 
     if verbose:
-        print()  # Add a newline at the end
+        print("\n" + "-"*80)
+        print("GENERATION COMPLETE")
+        print("="*80 + "\n")
 
     # Return only the generated tokens (exclude the prompt)
     return inputs[:, prompt_length:].detach().cpu()
@@ -72,7 +80,7 @@ def exp_sampling(probs, u):
 
 def main(args):
     torch.manual_seed(args.seed)
-    device = get_device()
+    device = get_device(verbose=args.verbose)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForCausalLM.from_pretrained(args.model).to(device)
