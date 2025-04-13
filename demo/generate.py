@@ -4,6 +4,7 @@ import argparse
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from mersenne import mersenne_rng
+from device_utils import get_device
 
 
 def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=True):
@@ -71,7 +72,7 @@ def exp_sampling(probs, u):
 
 def main(args):
     torch.manual_seed(args.seed)
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = get_device(args.device)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForCausalLM.from_pretrained(args.model).to(device)

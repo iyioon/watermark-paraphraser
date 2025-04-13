@@ -1,21 +1,20 @@
-import pyximport
-from tqdm import tqdm  # Add this import
-from mersenne import mersenne_rng
-from transformers import AutoTokenizer
-import numpy as np
-import time
-import argparse
-import sys
 import os
-# Suppress the HuggingFace tokenizers warning
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Suppress the HuggingFace tokenizers warning
+import sys
+import argparse
+import time
+import numpy as np
+from transformers import AutoTokenizer
+from mersenne import mersenne_rng
+from tqdm import tqdm
+import torch
 
-
+import pyximport
 pyximport.install(reload_support=True, language_level=sys.version_info[0],
                   setup_args={'include_dirs': np.get_include()})
 
-from levenshtein import levenshtein
 
+from levenshtein import levenshtein
 
 def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
     rng = mersenne_rng(key)
