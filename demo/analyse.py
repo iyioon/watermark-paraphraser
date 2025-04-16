@@ -3,24 +3,14 @@ import sys
 import json
 import argparse
 import re
-import time
 from tqdm import tqdm
 import pandas as pd
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 import seaborn as sns
-import torch
-import numpy as np
-import concurrent.futures
-from functools import lru_cache
-from transformers import AutoTokenizer
 
-# Import the necessary functions
-from detect import permutation_test
+# Import the function to determine watermarked keys
 from determine_watermarked_key import determine_watermarked_keys
-
-# Check for CUDA availability
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def extract_key_from_filename(filename):
@@ -39,73 +29,20 @@ def extract_key_from_filename(filename):
     return None
 
 
-@lru_cache(maxsize=2)
-def get_tokenizer(tokenizer_name):
-    """Cache tokenizer to avoid reloading for each file"""
-    return AutoTokenizer.from_pretrained(tokenizer_name)
-
-
-def process_file(args):
-    """Process a single file with the given parameters - designed for parallel execution"""
-    file_path, keys, threshold, tokenizer_name, n, verbose = args
-    filename = os.path.basename(file_path)
-    actual_key = extract_key_from_filename(filename)
-
-    try:
-        # Read file once
-        with open(file_path, 'r', encoding='utf-8') as f:
-            text = f.read()
-
-        # Tokenize once and reuse
-        tokenizer = get_tokenizer(tokenizer_name)
-        tokens = tokenizer.encode(
-            text, return_tensors='pt', truncation=True, max_length=2048).numpy()[0]
-        vocab_size = len(tokenizer)
-
-        # Get matching keys and p-values for all keys
-        p_values = {}
-
-        # Run permutation test for all keys in parallel
-        def test_key(key):
-            return key, permutation_test(tokens, int(key), n, len(tokens), vocab_size)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, len(keys))) as executor:
-            futures = {executor.submit(test_key, key): key for key in keys}
-
-            for future in concurrent.futures.as_completed(futures):
-                key, p_value = future.result()
-                p_values[key] = p_value
-
-        # Determine which key has the lowest p-value
-        detected_key = min(p_values.items(), key=lambda x: x[1])[
-            0] if p_values else None
-
-        file_result = {
-            'filename': filename,
-            'actual_key': actual_key,
-            'detected_key': detected_key,
-            'p_values': p_values,
-            'correct': actual_key is not None and detected_key == actual_key
-        }
-
-        # Free memory
-        if device.type == 'cuda':
-            torch.cuda.empty_cache()
-
-        return file_result
-
-    except Exception as e:
-        if verbose:
-            print(f"Error analyzing {filename}: {e}")
-        return {
-            'filename': filename,
-            'error': str(e)
-        }
-
-
 def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="microsoft/phi-2", n=256, verbose=False):
     """
     Analyze all text files in a folder to determine if they're watermarked with any of the provided keys.
+
+    Args:
+        folder_path (str): Path to the folder containing text files
+        keys (list): List of keys to check. If None, tries to get keys from metadata or filenames
+        threshold (float): P-value threshold for determining watermark presence
+        tokenizer_name (str): The name of the tokenizer to use
+        n (int): The length of the watermark sequence
+        verbose (bool): Whether to print detailed progress
+
+    Returns:
+        dict: Dictionary containing analysis results and accuracy metrics
     """
     if not os.path.isdir(folder_path):
         raise ValueError(f"'{folder_path}' is not a valid directory.")
@@ -151,45 +88,68 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
         'accuracy': 0.0
     }
 
-    # Use timestamp to track performance
-    t0 = time.time()
+    # Process each text file
+    for filename in tqdm(text_files, desc="Analyzing files", disable=not verbose):
+        file_path = os.path.join(folder_path, filename)
 
-    # Prepare parameters for parallel processing
-    file_paths = [os.path.join(folder_path, filename)
-                  for filename in text_files]
-    process_args = [(path, keys, threshold, tokenizer_name, n, verbose)
-                    for path in file_paths]
+        # Try to determine the actual key from the filename
+        actual_key = extract_key_from_filename(filename)
 
-    # Process files in parallel
-    with concurrent.futures.ProcessPoolExecutor(max_workers=min(os.cpu_count(), 8)) as executor:
-        future_to_file = {executor.submit(
-            process_file, arg): arg[0] for arg in process_args}
+        # Test all keys against this file
+        try:
+            matching_keys = determine_watermarked_keys(
+                file_path, keys, threshold, tokenizer_name, n, verbose=False
+            )
 
-        for future in tqdm(concurrent.futures.as_completed(future_to_file),
-                           total=len(text_files), desc="Analyzing files", disable=not verbose):
-            file_path = future_to_file[future]
-            filename = os.path.basename(file_path)
+            # Store results for this file
+            p_values = {}
+            for key in keys:
+                # Find the p-value for this key if it's in the matching_keys list
+                p_value = next((p for k, p in matching_keys if k == key), None)
+                if p_value is None:
+                    # Run the detection to get the p-value even for non-matching keys
+                    from detect import permutation_test
+                    from transformers import AutoTokenizer
 
-            try:
-                file_result = future.result()
-                results['file_results'][filename] = file_result
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        text = f.read()
 
-                # Count correct identifications if we know the actual key
-                if 'actual_key' in file_result and file_result['actual_key'] is not None:
-                    results['total_files'] += 1
-                    if file_result.get('correct', False):
-                        results['correct_identifications'] += 1
+                    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+                    tokens = tokenizer.encode(
+                        text, return_tensors='pt', truncation=True, max_length=2048).numpy()[0]
+                    p_value = permutation_test(tokens, int(
+                        key), n, len(tokens), len(tokenizer))
 
-            except Exception as e:
-                print(f"Error processing {filename}: {e}")
-                results['file_results'][filename] = {'error': str(e)}
+                p_values[key] = p_value
+
+            # Determine which key has the lowest p-value
+            detected_key = min(p_values.items(), key=lambda x: x[1])[
+                0] if p_values else None
+
+            file_result = {
+                'filename': filename,
+                'actual_key': actual_key,
+                'detected_key': detected_key,
+                'p_values': p_values,
+                'correct': actual_key is not None and detected_key == actual_key
+            }
+
+            results['file_results'][filename] = file_result
+
+            # Count correct identifications if we know the actual key
+            if actual_key is not None:
+                results['total_files'] += 1
+                if file_result['correct']:
+                    results['correct_identifications'] += 1
+
+        except Exception as e:
+            print(f"Error analyzing {filename}: {e}")
+            results['file_results'][filename] = {'error': str(e)}
 
     # Calculate overall accuracy
     if results['total_files'] > 0:
         results['accuracy'] = results['correct_identifications'] / \
             results['total_files']
-
-    print(f"Analysis completed in {time.time() - t0:.2f} seconds")
 
     return results
 
@@ -197,6 +157,14 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
 def create_heatmap(results, output_folder, filename="heatmap.png"):
     """
     Create a heatmap visualization and save it to a file.
+
+    Args:
+        results (dict): Analysis results
+        output_folder (str): Folder where to save the image
+        filename (str): Name of the png file to save
+
+    Returns:
+        str: Path to the saved heatmap image or None if visualization could not be created
     """
     try:
         # Create DataFrame for heatmap
@@ -259,6 +227,10 @@ def create_heatmap(results, output_folder, filename="heatmap.png"):
 def save_analysis_report(results, output_path):
     """
     Save the analysis results to a Markdown file with linked visualization.
+
+    Args:
+        results (dict): Analysis results
+        output_path (str): Path to save the report
     """
     # Create an images directory next to the output file
     output_dir = os.path.dirname(output_path)
@@ -270,8 +242,8 @@ def save_analysis_report(results, output_path):
     heatmap_path = create_heatmap(results, images_dir, heatmap_filename)
 
     # Get relative path for markdown link
-    rel_heatmap_path = os.path.join(
-        'images', heatmap_filename) if heatmap_path else None
+    if heatmap_path:
+        rel_heatmap_path = os.path.join('images', heatmap_filename)
 
     with open(output_path, 'w') as f:
         f.write("# Watermark Detection Analysis Report\n\n")
@@ -287,7 +259,7 @@ def save_analysis_report(results, output_path):
             f.write(f"- Accuracy: {results['accuracy'] * 100:.2f}%\n\n")
 
         # Visualization - linked from the markdown
-        if rel_heatmap_path:
+        if heatmap_path:
             f.write("## Visualization\n\n")
             f.write("P-values heatmap for each file and key combination:\n\n")
             f.write(f"![P-values Heatmap]({rel_heatmap_path})\n\n")
@@ -355,15 +327,6 @@ def main():
         args.output = os.path.join(args.folder, 'watermark_analysis.md')
 
     try:
-        # Enable CuDNN benchmarking for better GPU performance
-        if torch.cuda.is_available():
-            torch.backends.cudnn.benchmark = True
-
-        # Set Windows-specific multiprocessing method
-        if sys.platform.startswith('win'):
-            import multiprocessing
-            multiprocessing.set_start_method('spawn', force=True)
-
         # Analyze the folder
         results = analyze_folder(
             args.folder,
