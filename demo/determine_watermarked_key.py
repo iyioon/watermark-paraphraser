@@ -107,3 +107,50 @@ def determine_watermarked_keys(input_file, keys, threshold=0.01, tokenizer_name=
                     print(f"Error processing key {key}: {e}")
 
     return matching_keys
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Determine if a file has been watermarked with any of the provided keys.')
+    parser.add_argument('document', type=str,
+                        help='Path to the input file to check')
+    parser.add_argument('--keys', type=int, nargs='+', required=True,
+                        help='List of keys to check against the input file')
+    parser.add_argument('--tokenizer', default='microsoft/phi-2', type=str,
+                        help='a HuggingFace model id of the tokenizer used by the watermarked model')
+    parser.add_argument('--n', default=256, type=int,
+                        help='the length of the watermark sequence')
+    parser.add_argument('--threshold', type=float, default=0.01,
+                        help='P-value threshold for determining watermark presence (default: 0.01)')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Print detailed results for each key')
+
+    args = parser.parse_args()
+
+    try:
+        print(
+            f"Checking document '{args.document}' against {len(args.keys)} keys...")
+
+        matching_keys = determine_watermarked_keys(
+            args.document,
+            args.keys,
+            args.threshold,
+            args.tokenizer,
+            args.n,
+            args.verbose
+        )
+
+        if matching_keys:
+            print("\nWatermark detected with the following keys:")
+            for key, p_value in matching_keys:
+                print(f"  - Key: {key}, p-value: {p_value:.6f}")
+        else:
+            print("\nNo watermark detected with any of the provided keys.")
+
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
