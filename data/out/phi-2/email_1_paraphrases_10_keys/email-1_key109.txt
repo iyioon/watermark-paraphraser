@@ -1,0 +1,11 @@
+A message with the following content:
+
+"Please note that you won't have any physical tutorials in Week 3, however, the weekly lecture is still scheduled for 27th January. 
+
+I have attached tutorial 1 in the Tutorial & Project Assignments folder for your convenience. You should manually submit the graded solutions of this tutorial by 4pm on 3rd February, which falls on Week 4."
+
+"Apart from that, tutorial 1 will be based on the lectures of this week, which is the one up to Week 3, and the one following it in Week 4. Therefore, this tutorial is fine to follow after the lecture on 27th January.
+
+Best, Bryan."
+
+

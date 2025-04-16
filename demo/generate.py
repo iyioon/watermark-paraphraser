@@ -16,70 +16,109 @@ Output:
 """
 
 
-def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=True):
-    rng = mersenne_rng(key)
-    xi = torch.tensor([rng.rand()
-                      for _ in range(n * vocab_size)]).view(n, vocab_size)
-    shift = torch.randint(n, (1,))
+def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=True, max_attempts=10):
+    # Hard-coded threshold for length difference (as a percentage)
+    length_threshold = 0.20  # Allow deviation from original length
 
-    inputs = prompt.to(model.device)
-    attn = torch.ones_like(inputs)
-    past = None
+    # Store the prompt length to use for comparison
+    prompt_text = model.config.tokenizer.decode(
+        prompt[0], skip_special_tokens=True)
+    orig_content_length = len(prompt_text.split())  # Rough word count
 
-    # Get the tokenizer to determine the EOS token ID
-    tokenizer = model.config.tokenizer
-    eos_token_id = model.config.eos_token_id
+    for attempt in range(max_attempts):
+        if attempt > 0 and verbose:
+            print(
+                f"\n\nRetrying generation (attempt {attempt+1}/{max_attempts})...\n")
 
-    # Store only the initial input length to exclude prompt from output
-    prompt_length = inputs.size(1)
+        # Use a different key for each attempt
+        rng = mersenne_rng(key + attempt)
+        xi = torch.tensor([rng.rand()
+                          for _ in range(n * vocab_size)]).view(n, vocab_size)
+        shift = torch.randint(n, (1,))
 
-    # Initialize the output text
-    previous_text = ""
+        inputs = prompt.to(model.device)
+        attn = torch.ones_like(inputs)
+        past = None
 
-    # Add separator line before generation starts
-    if verbose:
-        print("\n" + "=" * 80)
-        print("GENERATING TEXT:")
-        print("-" * 80 + "\n")
+        # Get the tokenizer to determine the EOS token ID
+        tokenizer = model.config.tokenizer
+        eos_token_id = model.config.eos_token_id
 
-    i = 0
-    # Continue generating until EOS token or max_length is reached
-    while i < max_length:
-        with torch.no_grad():
-            if past:
-                output = model(
-                    inputs[:, -1:], past_key_values=past, attention_mask=attn)
-            else:
-                output = model(inputs)
+        # Store only the initial input length to exclude prompt from output
+        prompt_length = inputs.size(1)
 
-        probs = torch.nn.functional.softmax(
-            output.logits[:, -1, :vocab_size], dim=-1).cpu()
-        token = exp_sampling(probs, xi[(shift + i) % n, :]).to(model.device)
+        # Initialize the output text
+        previous_text = ""
 
-        # Stop if we generated an EOS token
-        if token.item() == eos_token_id:
-            break
+        # Add separator line before generation starts
+        if verbose and attempt == 0:
+            print("\n" + "=" * 80)
+            print("GENERATING TEXT:")
+            print("-" * 80 + "\n")
 
-        inputs = torch.cat([inputs, token], dim=-1)
+        i = 0
+        # Continue generating until EOS token or max_length is reached
+        while i < max_length:
+            with torch.no_grad():
+                if past:
+                    output = model(
+                        inputs[:, -1:], past_key_values=past, attention_mask=attn)
+                else:
+                    output = model(inputs)
 
-        # Print the newly generated token
+            probs = torch.nn.functional.softmax(
+                output.logits[:, -1, :vocab_size], dim=-1).cpu()
+            token = exp_sampling(
+                probs, xi[(shift + i) % n, :]).to(model.device)
+
+            # Stop if we generated an EOS token
+            if token.item() == eos_token_id:
+                break
+
+            # Add a safety check for extremely long outputs
+            if i > prompt_length * 3:
+                if verbose:
+                    print("\n[Forcing stop - output too long]")
+                break
+
+            inputs = torch.cat([inputs, token], dim=-1)
+
+            # Print the newly generated token
+            if verbose:
+                current_text = tokenizer.decode(
+                    inputs[0, prompt_length:], skip_special_tokens=True)
+                new_text = current_text[len(previous_text):]
+                print(new_text, end="", flush=True)
+                previous_text = current_text
+
+            past = output.past_key_values
+            attn = torch.cat([attn, attn.new_ones((attn.shape[0], 1))], dim=-1)
+            i += 1
+
+        # Check if the generated content length is within threshold
+        generated_tokens = inputs[:, prompt_length:].detach().cpu()
+        generated_text = tokenizer.decode(
+            generated_tokens[0], skip_special_tokens=True)
+        gen_content_length = len(generated_text.split())  # Rough word count
+
+        # Calculate length difference as a percentage
+        length_diff = abs(gen_content_length -
+                          orig_content_length) / orig_content_length
+
         if verbose:
-            current_text = tokenizer.decode(
-                inputs[0, prompt_length:], skip_special_tokens=True)
-            new_text = current_text[len(previous_text):]
-            print(new_text, end="", flush=True)
-            previous_text = current_text
+            print(f"\nOriginal length: {orig_content_length} words")
+            print(f"Generated length: {gen_content_length} words")
+            print(f"Difference: {length_diff:.1%}")
 
-        past = output.past_key_values
-        attn = torch.cat([attn, attn.new_ones((attn.shape[0], 1))], dim=-1)
-        i += 1
+        # If length is within threshold or we've run out of attempts, return this generation
+        if length_diff <= length_threshold or attempt == max_attempts - 1:
+            if verbose:
+                print("\n" + "-" * 80)
+                print("GENERATION COMPLETE")
+                print("=" * 80 + "\n")
+            return generated_tokens
 
-    if verbose:
-        print("\n" + "-" * 80)
-        print("GENERATION COMPLETE")
-        print("=" * 80 + "\n")
-
-    # Return only the generated tokens (exclude the prompt)
+    # This should never be reached due to the return inside the loop
     return inputs[:, prompt_length:].detach().cpu()
 
 

@@ -1,0 +1,14 @@
+An email with the same content but rewritten in different words and structure, such as:
+
+```
+Dear Team,
+
+There will be no face-to-face demo sessions on Week 3 instead the lecture on 27 Jan will continue as planned.
+
+You've now received tutorial 1 in the Tutorial & Project Assignments folder. Please check out the information provided within regarding the deadline for submitting the graded solutions by 3 Feb, 4pm (Week 4).
+
+Don't forget that tutorial 1 is linked to the lectures in Week 2 and Week 3. Therefore, you can start working on it after the lecture on 27 Jan (Week 3).
+
+Sincerely,
+Bryan
+```
