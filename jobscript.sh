@@ -1,11 +1,12 @@
 #!/bin/bash
-#PBS -P CS3264
-#PBS -j oe                        # Merge standard error and output
-#PBS -N watermark-paraphraser                    
-#PBS -l select=1:ncpus=1
-#PBS -l place=free:shared         # Resource placement
 
-cd ${PBS_O_WORKDIR}
+#PBS -P myproj
+#PBS -j oe
+#PBS -N myprog
+#PBS -l select=1:ncpus=1
+#PBS -l place=free:shared
+
+cd ${PBS_O_WORKDIR};   ## this line is needed, do not delete.
 
 # Create a temporary scratch directory
 scratch=/scratch/${USER}/${PBS_JOBID}
