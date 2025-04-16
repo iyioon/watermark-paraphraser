@@ -1,7 +1,7 @@
 #!/bin/bash
-#PBS -P watermarkparaphrase
+#PBS -P CS3264
 #PBS -j oe
-#PBS -N watermarkparaphrase
+#PBS -N CS3264 
 #PBS -l select=1:ncpus=1
 #PBS -l place=free:shared
 
