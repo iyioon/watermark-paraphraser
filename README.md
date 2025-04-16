@@ -23,16 +23,16 @@ Also, be sure to set the environment variables `$HF_HOME` and `$TRANSFORMERS_CAC
 
 ## Basic Usage
 
-To generate a paraphrased verion of a text from a model (e.g., `facebook/opt-1.3b`) with watermark key `42`, run:
+To generate a paraphrased verion of a text from a model (e.g., `microsoft/phi-2`) with watermark key `42`, run:
 
 ```
-python demo/generate.py data/in/email-1.txt --model facebook/opt-iml-1.3b --key 42 --output data/out/email-1.txt --verbose
+python demo/generate.py data/in/email-1.txt --model microsoft/phi-2 --key 42 --output data/out/email-1.txt --verbose
 ```
 
 Checking for the watermark requires a watermark key (in this case, `42`) and the model tokenizer, but crucially it does not require access to the model itself. To test for a watermark in a given text document `output.txt`, run
 
 ```
-python demo/detect.py data/out/email-1.txt --tokenizer facebook/opt-iml-1.3b --key 42
+python demo/detect.py data/out/email-1.txt --tokenizer microsoft/phi-2 --key 42
 ```
 
 ## Experiment
@@ -40,7 +40,7 @@ python demo/detect.py data/out/email-1.txt --tokenizer facebook/opt-iml-1.3b --k
 To generate multiple paraphrased version of the same text (using different keys), run:
 
 ```
-python demo/generate_multiple_paraphrases.py data/in/email-1.txt --output-dir data/out/email_1_paraphrases --num-versions 3 --model facebook/opt-iml-1.3b --verbose
+python demo/generate_multiple_paraphrases.py data/in/email-1.txt --output-dir data/out/email_1_paraphrases --num-versions 3 --model microsoft/phi-2 --verbose
 ```
 
 You can also specify the key start value with `--key-range-start`.

@@ -28,7 +28,7 @@ def parse_args():
                         help='Path to the file containing text to paraphrase')
     parser.add_argument('--output-dir', type=str, required=True,
                         help='Directory to save the watermarked texts to')
-    parser.add_argument('--model', default='facebook/opt-iml-1.3b', type=str,
+    parser.add_argument('--model', default='microsoft/phi-2', type=str,
                         help='HuggingFace model ID for generation')
     parser.add_argument('--n', default=256, type=int,
                         help='Length of the watermark sequence')

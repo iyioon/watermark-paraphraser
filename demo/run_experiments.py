@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 
-def run_experiment(email_num, model="facebook/opt-iml-1.3b", num_versions=3, verbose=True, starting_key=None):
+def run_experiment(email_num, model="microsoft/phi-2", num_versions=3, verbose=True, starting_key=None):
     """
     Run paraphrase generation and analysis for a single email.
 
@@ -87,7 +87,7 @@ def main():
         description='Run paraphrase generation and analysis for multiple emails.')
     parser.add_argument('--emails', type=int, nargs='+', default=list(range(1, 9)),
                         help='Email numbers to process (default: 1-8)')
-    parser.add_argument('--model', type=str, default='facebook/opt-iml-1.3b',
+    parser.add_argument('--model', type=str, default='microsoft/phi-2',
                         help='Model to use for paraphrasing')
     parser.add_argument('--num-versions', type=int, default=3,
                         help='Number of paraphrase versions to generate')

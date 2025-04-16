@@ -152,7 +152,7 @@ if __name__ == '__main__':
         description='generate text watermarked with a key')
     parser.add_argument('document', type=str,
                         help='a file containing text to paraphrase')
-    parser.add_argument('--model', default='facebook/opt-iml-1.3b', type=str,
+    parser.add_argument('--model', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the model to generate from')
     parser.add_argument('--n', default=256, type=int,
                         help='the length of the watermark sequence')

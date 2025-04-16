@@ -8,7 +8,7 @@ import sys
 from detect import permutation_test
 
 
-def get_detection_p_value(text, key, tokenizer_name="facebook/opt-iml-1.3b", n=256):
+def get_detection_p_value(text, key, tokenizer_name="microsoft/phi-2", n=256):
     """
     Get the p-value for detecting a watermark in text using a specific key.
 
@@ -35,7 +35,7 @@ def get_detection_p_value(text, key, tokenizer_name="facebook/opt-iml-1.3b", n=2
     return p_value
 
 
-def determine_watermarked_keys(input_file, keys, threshold=0.01, tokenizer_name="facebook/opt-iml-1.3b", n=256, verbose=False):
+def determine_watermarked_keys(input_file, keys, threshold=0.01, tokenizer_name="microsoft/phi-2", n=256, verbose=False):
     """
     Determine which keys (if any) were used to watermark the input file.
 
@@ -84,7 +84,7 @@ def main():
                         help='Path to the input file to check')
     parser.add_argument('--keys', type=int, nargs='+', required=True,
                         help='List of keys to check against the input file')
-    parser.add_argument('--tokenizer', default='facebook/opt-iml-1.3b', type=str,
+    parser.add_argument('--tokenizer', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the tokenizer used by the watermarked model')
     parser.add_argument('--n', default=256, type=int,
                         help='the length of the watermark sequence')

@@ -17,9 +17,10 @@ pyximport.install(reload_support=True, language_level=sys.version_info[0],
 
 from levenshtein import levenshtein
 
+
 def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
     rng = mersenne_rng(key)
-    xi = np.array([rng.rand() for _ in range(n*vocab_size)],
+    xi = np.array([rng.rand() for _ in range(n * vocab_size)],
                   dtype=np.float32).reshape(n, vocab_size)
     test_result = detect(tokens, n, k, xi)
 
@@ -32,19 +33,19 @@ def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
         # assuming lower test values indicate presence of watermark
         p_val += null_result <= test_result
 
-    return (p_val+1.0)/(n_runs+1.0)
+    return (p_val + 1.0) / (n_runs + 1.0)
 
 
 def detect(tokens, n, k, xi, gamma=0.0):
     m = len(tokens)
     n = len(xi)
 
-    A = np.empty((m-(k-1), n))
+    A = np.empty((m - (k - 1), n))
     # Progress bar
-    for i in tqdm(range(m-(k-1)), desc="Computing detection matrix", leave=False):
+    for i in tqdm(range(m - (k - 1)), desc="Computing detection matrix", leave=False):
         for j in range(n):
             A[i][j] = levenshtein(
-                tokens[i:i+k], xi[(j+np.arange(k)) % n], gamma)
+                tokens[i:i + k], xi[(j + np.arange(k)) % n], gamma)
 
     return np.min(A)
 
@@ -72,7 +73,7 @@ if __name__ == '__main__':
         description='test for a watermark in a text document')
     parser.add_argument('document', type=str,
                         help='a file containing the document to test')
-    parser.add_argument('--tokenizer', default='facebook/opt-iml-1.3b', type=str,
+    parser.add_argument('--tokenizer', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the tokenizer used by the watermarked model')
     parser.add_argument('--n', default=256, type=int,
                         help='the length of the watermark sequence')
