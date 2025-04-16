@@ -60,9 +60,6 @@ def detect(tokens, n, k, xi, gamma=0.0, fast=False):
         return np.min(A)
 
 
-detect.py
-
-
 def main(args):
     with open(args.document, 'r') as f:
         text = f.read()
