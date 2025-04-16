@@ -6,28 +6,13 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from mersenne import mersenne_rng
 from device_utils import get_device
 
-EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """
-I need you to paraphrase the following email while preserving its exact meaning.
+EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """<s>[INST] <<SYS>>
+You are a professional paraphrasing expert. Your task is to rewrite the provided email using different vocabulary and sentence structures while maintaining identical meaning, facts, and tone.
+<</SYS>>
 
-Instructions:
-1. Rewrite using different vocabulary and phrasing
-2. Maintain EXACTLY the same:
-   - Email structure (greeting, body paragraphs, closing, signature)
-   - All factual information, dates, numbers, and names
-   - Professional tone and formality level
-   - All contact information and references
+Paraphrase this email while keeping all factual information, names, dates, and professional tone exactly the same:
 
-Important guidelines:
-- Keep the same paragraph structure
-- Preserve any confidentiality notices or disclaimers exactly
-- Do not add, remove, or modify any substantive information
-- Maintain approximately the same length
-- Start with the same type of greeting and end with similar closing
-
-Original email:
-{text}
-
-Paraphrased version:
+{text} [/INST]
 """
 
 
@@ -106,8 +91,21 @@ def main(args):
     torch.manual_seed(args.seed)
     device = get_device(verbose=args.verbose)
 
+    # For Llama-2-13b on 4070Ti, use 8-bit quantization
+    from transformers import BitsAndBytesConfig
+
+    quantization_config = BitsAndBytesConfig(
+        load_in_8bit=True,  # 8-bit is sufficient for 13B on 12GB VRAM
+        bnb_8bit_compute_dtype=torch.float16
+    )
+
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(args.model).to(device)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        quantization_config=quantization_config,
+        device_map="auto",
+        torch_dtype=torch.float16
+    )
 
     # Add the tokenizer to the model config for easy access
     model.config.tokenizer = tokenizer
