@@ -19,6 +19,10 @@ from levenshtein import levenshtein
 
 
 def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
+
+    # Convert tokens to the expected type - add this line
+    tokens = np.array(tokens, dtype=np.int32)  # Use int32 instead of int64
+
     rng = mersenne_rng(key)
     xi = np.array([rng.rand() for _ in range(n * vocab_size)],
                   dtype=np.float32).reshape(n, vocab_size)
