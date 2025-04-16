@@ -16,7 +16,7 @@ Paraphrase this email while keeping all factual information, names, dates, and p
 """
 
 
-def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=True):
+def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=True):
     rng = mersenne_rng(key)
     xi = torch.tensor([rng.rand()
                       for _ in range(n * vocab_size)]).view(n, vocab_size)
