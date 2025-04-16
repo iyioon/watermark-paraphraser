@@ -18,20 +18,20 @@ pyximport.install(reload_support=True, language_level=sys.version_info[0],
 from levenshtein import levenshtein
 
 
-def permutation_test(tokens, key, n, k, vocab_size, n_runs=100, fast=False):
-    # Convert tokens to the expected type - add this line
-    tokens = np.array(tokens, dtype=np.int32)  # Use int32 instead of int64
+def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
+
+    tokens = np.array(tokens, dtype=np.int32)
 
     rng = mersenne_rng(key)
     xi = np.array([rng.rand() for _ in range(n * vocab_size)],
                   dtype=np.float32).reshape(n, vocab_size)
-    test_result = detect(tokens, n, k, xi, fast=fast)
+    test_result = detect(tokens, n, k, xi)
 
     p_val = 0
     # Progress bar
     for run in tqdm(range(n_runs), desc="Running permutation tests", total=n_runs):
         xi_alternative = np.random.rand(n, vocab_size).astype(np.float32)
-        null_result = detect(tokens, n, k, xi_alternative, fast=fast)
+        null_result = detect(tokens, n, k, xi_alternative)
 
         # assuming lower test values indicate presence of watermark
         p_val += null_result <= test_result
@@ -39,7 +39,7 @@ def permutation_test(tokens, key, n, k, vocab_size, n_runs=100, fast=False):
     return (p_val + 1.0) / (n_runs + 1.0)
 
 
-def detect(tokens, n, k, xi, gamma=0.0, fast=False):
+def detect(tokens, n, k, xi, gamma=0.0):
     m = len(tokens)
     n = len(xi)
 
@@ -50,17 +50,7 @@ def detect(tokens, n, k, xi, gamma=0.0, fast=False):
             A[i][j] = levenshtein(
                 tokens[i:i + k], xi[(j + np.arange(k)) % n], gamma)
 
-    if fast:
-        # JavaScript-style detection: calculate median of row minimums
-        # Get minimum cost for each alignment position
-        closest = np.min(A, axis=1)
-        return np.median(closest)    # Return the median value
-    else:
-        # Original detection: return global minimum
-        return np.min(A)
-
-
-detect.py
+    return np.min(A)
 
 
 def main(args):
@@ -73,7 +63,7 @@ def main(args):
 
     t0 = time.time()
     pval = permutation_test(tokens, args.key, args.n,
-                            len(tokens), len(tokenizer), fast=args.fast)
+                            len(tokens), len(tokenizer))
 
     treshold = 0.01
 
@@ -92,7 +82,5 @@ if __name__ == '__main__':
                         help='the length of the watermark sequence')
     parser.add_argument('--key', default=42, type=int,
                         help='the seed for the watermark sequence')
-    parser.add_argument('--fast', action='store_true',
-                        help='use JavaScript-style detection (median of minimums)')
 
     main(parser.parse_args())
