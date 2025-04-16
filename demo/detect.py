@@ -86,9 +86,6 @@ def fast_permutation_test(tokens, key, n, k, vocab_size, n_runs=99):
     return (p_val + 1.0) / (n_runs + 1.0)
 
 
-from tqdm import tqdm
-
-
 def fast_test_stat(tokens, u, n, k):
     vocab = len(u) // n
     m = len(tokens)
@@ -96,91 +93,82 @@ def fast_test_stat(tokens, u, n, k):
     # Move data to GPU
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     tokens_tensor = torch.tensor(tokens, device=device)
-    u_tensor = torch.tensor(u, device=device)
+    u_tensor = torch.tensor(u, device=device, dtype=torch.float32)
 
-    # Pre-compute all sub-indices to avoid repeated calculations
-    sub_indices_list = []
-    for j in range(n):
-        sub_indices = torch.tensor([(vocab * j + p) % (vocab * n) for p in range(vocab * k)],
-                                   device=device, dtype=torch.long)
-        sub_indices_list.append(sub_indices)
-
-    # Process in smaller batches to avoid memory issues
-    batch_size = 100  # Adjust based on your GPU memory
+    # Process in batches to maximize GPU utilization
+    batch_size = 500  # Reduced to avoid memory issues
     num_batches = (m - (k - 1) + batch_size - 1) // batch_size
-    A = []
+    closest_distances = []
 
     for batch in tqdm(range(num_batches), desc="Computing fast detection matrix"):
         start_idx = batch * batch_size
         end_idx = min(start_idx + batch_size, m - (k - 1))
 
-        batch_rows = []
+        batch_min_distances = torch.ones(
+            end_idx - start_idx, device=device) * float('inf')
+
         for i in range(start_idx, end_idx):
-            row = []
-            token_subseq = tokens_tensor[i:i + k]
+            idx = i - start_idx
+            # Get current token sequence
+            seq = tokens_tensor[i:i + k]
 
+            min_dist = float('inf')
             for j in range(n):
-                sub = u_tensor[sub_indices_list[j]]
-                # Calculate distance (implement appropriate distance metric here)
-                distance = torch.min(
-                    torch.abs(token_subseq.unsqueeze(1) - sub.unsqueeze(0))).item()
-                row.append(distance)
+                # Extract pattern
+                sub = torch.zeros(vocab * k, device=device,
+                                  dtype=torch.float32)
+                for p in range(vocab * k):
+                    sub[p] = u_tensor[(vocab * j + p) % (vocab * n)]
 
-            batch_rows.append(row)
+                # Calculate distance using vectorized operations where possible
+                distance = vectorized_levenshtein(seq, sub, vocab, device)
+                min_dist = min(min_dist, distance)
 
-            # Periodically clear CUDA cache if needed
-            if (i - start_idx) % 50 == 0:
-                torch.cuda.empty_cache()
+            batch_min_distances[idx] = min_dist
 
-        A.extend(batch_rows)
-
-    # Get minimum cost for each alignment
-    closest = [min(row) for row in A]
+        closest_distances.extend(batch_min_distances.cpu().numpy().tolist())
+        # Clear GPU cache to prevent memory issues
+        torch.cuda.empty_cache()
 
     # Calculate median
-    closest.sort()
-    mid = len(closest) // 2
-    if len(closest) % 2 != 0:
-        return closest[mid]
+    closest_distances.sort()
+    mid = len(closest_distances) // 2
+    if len(closest_distances) % 2 != 0:
+        return closest_distances[mid]
     else:
-        return (closest[mid - 1] + closest[mid]) / 2.0
+        return (closest_distances[mid - 1] + closest_distances[mid]) / 2.0
 
 
-def fast_levenshtein_gpu(seq1, seq2, vocab):
+def vectorized_levenshtein(x, y, vocab, device, gamma=0.0):
     """
-    GPU-accelerated Levenshtein distance calculation
-
-    Args:
-        seq1: PyTorch tensor of first sequence on GPU
-        seq2: PyTorch tensor of second sequence on GPU
-        vocab: vocabulary size
-
-    Returns:
-        PyTorch tensor containing the Levenshtein distance
+    Optimized Levenshtein distance calculation using GPU
     """
-    # Assuming seq1 and seq2 are 1D tensors of token indices
-    len1, len2 = len(seq1), len(seq2)
+    n = len(x)
+    m = len(y) // vocab
 
-    # Initialize distance matrix on GPU
-    dp = torch.zeros(len1 + 1, len2 + 1, device=seq1.device)
+    # Initialize DP matrix on GPU - using a single allocation
+    dp = torch.zeros((n + 1, m + 1), device=device, dtype=torch.float32)
 
-    # Fill first row and column
-    for i in range(len1 + 1):
-        dp[i, 0] = i
-    for j in range(len2 + 1):
-        dp[0, j] = j
+    # Fill first row and column with vectorized operations
+    dp[0, :] = torch.arange(0, m + 1, device=device) * gamma
+    dp[:, 0] = torch.arange(0, n + 1, device=device) * gamma
 
-    # Compute distance using GPU operations
-    for i in range(1, len1 + 1):
-        for j in range(1, len2 + 1):
-            cost = 0 if seq1[i - 1] == seq2[j - 1] else 1
-            dp[i, j] = min(
-                dp[i - 1, j] + 1,       # deletion
-                dp[i, j - 1] + 1,       # insertion
-                dp[i - 1, j - 1] + cost   # substitution
-            )
+    # More efficient implementation with fewer item() calls
+    x_cpu = x.cpu().numpy()  # Copy to CPU once, not in the loop
 
-    return dp[len1, len2]
+    # Process the DP table
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            token_idx = x_cpu[i - 1]
+            cost = torch.log(1 - y[vocab * (j - 1) + token_idx])
+
+            deletion = dp[i - 1, j] + gamma
+            insertion = dp[i, j - 1] + gamma
+            substitution = dp[i - 1, j - 1] + cost
+
+            dp[i, j] = torch.min(torch.min(deletion, insertion), substitution)
+
+    return dp[n, m].item()
 
 
 def main(args):
