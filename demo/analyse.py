@@ -8,8 +8,6 @@ import pandas as pd
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 import seaborn as sns
-import base64
-from io import BytesIO
 
 # Import the function to determine watermarked keys
 from determine_watermarked_key import determine_watermarked_keys
@@ -156,26 +154,28 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="faceb
     return results
 
 
-def create_heatmap_base64(results):
+def create_heatmap(results, output_folder, filename="heatmap.png"):
     """
-    Create a heatmap visualization and return as base64-encoded string for embedding in Markdown.
+    Create a heatmap visualization and save it to a file.
 
     Args:
         results (dict): Analysis results
+        output_folder (str): Folder where to save the image
+        filename (str): Name of the png file to save
 
     Returns:
-        str: Base64-encoded image data or None if visualization could not be created
+        str: Path to the saved heatmap image or None if visualization could not be created
     """
     try:
         # Create DataFrame for heatmap
         data = []
-        for filename, file_result in results['file_results'].items():
+        for filename_key, file_result in results['file_results'].items():
             if 'p_values' not in file_result:
                 continue
 
             for key, p_value in file_result['p_values'].items():
                 data.append({
-                    'Filename': filename,
+                    'Filename': filename_key,
                     'Key': key,
                     'P-value': p_value,
                     'Actual Key': file_result.get('actual_key'),
@@ -187,8 +187,9 @@ def create_heatmap_base64(results):
 
         df = pd.DataFrame(data)
 
-        # Create heatmap
-        plt.figure(figsize=(12, max(8, len(results['file_results']) * 0.5)))
+        # Use a unique figure identifier to avoid name conflicts
+        plt.figure(figsize=(
+            12, max(8, len(results['file_results']) * 0.5)), num="watermark_heatmap")
 
         # Create a pivot table for the heatmap
         pivot_data = df.pivot(
@@ -207,20 +208,16 @@ def create_heatmap_base64(results):
         plt.title('P-values for Each File and Key Combination')
         plt.tight_layout()
 
-        # Save figure to memory buffer
-        buffer = BytesIO()
-        plt.savefig(buffer, format='png')
-        plt.close()
+        # Save figure to file
+        os.makedirs(output_folder, exist_ok=True)
+        output_path = os.path.join(output_folder, filename)
 
-        # Encode the image
-        buffer.seek(0)
-        image_png = buffer.getvalue()
-        buffer.close()
+        # Explicitly close any existing figure with this name
+        plt.savefig(output_path, format='png', dpi=150)
+        plt.close("watermark_heatmap")  # Close by figure number
 
-        # Encode to base64 string
-        graphic = base64.b64encode(image_png).decode('utf-8')
-
-        return graphic
+        print(f"Heatmap successfully saved to: {output_path}")
+        return output_path
 
     except Exception as e:
         print(f"Error creating heatmap visualization: {e}")
@@ -229,14 +226,24 @@ def create_heatmap_base64(results):
 
 def save_analysis_report(results, output_path):
     """
-    Save the analysis results to a Markdown file with embedded visualization.
+    Save the analysis results to a Markdown file with linked visualization.
 
     Args:
         results (dict): Analysis results
         output_path (str): Path to save the report
     """
-    # Create heatmap visualization as base64 string
-    heatmap_base64 = create_heatmap_base64(results)
+    # Create an images directory next to the output file
+    output_dir = os.path.dirname(output_path)
+    images_dir = os.path.join(output_dir, 'images')
+    os.makedirs(images_dir, exist_ok=True)
+
+    # Create heatmap visualization and save to file
+    heatmap_filename = "heatmap.png"
+    heatmap_path = create_heatmap(results, images_dir, heatmap_filename)
+
+    # Get relative path for markdown link
+    if heatmap_path:
+        rel_heatmap_path = os.path.join('images', heatmap_filename)
 
     with open(output_path, 'w') as f:
         f.write("# Watermark Detection Analysis Report\n\n")
@@ -251,12 +258,11 @@ def save_analysis_report(results, output_path):
                 f"- Correct identifications: {results['correct_identifications']} out of {results['total_files']}\n")
             f.write(f"- Accuracy: {results['accuracy'] * 100:.2f}%\n\n")
 
-        # Visualization - embedded directly in the Markdown
-        if heatmap_base64:
+        # Visualization - linked from the markdown
+        if heatmap_path:
             f.write("## Visualization\n\n")
             f.write("P-values heatmap for each file and key combination:\n\n")
-            f.write(
-                f"![P-values Heatmap](data:image/png;base64,{heatmap_base64})\n\n")
+            f.write(f"![P-values Heatmap]({rel_heatmap_path})\n\n")
             f.write(
                 "*Lower p-values (darker colors) indicate stronger evidence of watermarking with that key.*\n\n")
 
