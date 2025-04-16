@@ -3,6 +3,7 @@ import sys
 import json
 import argparse
 import re
+import concurrent
 from tqdm import tqdm
 import pandas as pd
 from tabulate import tabulate
@@ -32,6 +33,7 @@ def extract_key_from_filename(filename):
 def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="microsoft/phi-2", n=256, verbose=False):
     """
     Analyze all text files in a folder to determine if they're watermarked with any of the provided keys.
+    Files are processed concurrently for improved performance.
 
     Args:
         folder_path (str): Path to the folder containing text files
@@ -88,15 +90,15 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
         'accuracy': 0.0
     }
 
-    # Process each text file
-    for filename in tqdm(text_files, desc="Analyzing files", disable=not verbose):
-        file_path = os.path.join(folder_path, filename)
-
-        # Try to determine the actual key from the filename
-        actual_key = extract_key_from_filename(filename)
-
-        # Test all keys against this file
+    # Define a worker function to process a single file
+    def process_file(filename):
         try:
+            file_path = os.path.join(folder_path, filename)
+
+            # Try to determine the actual key from the filename
+            actual_key = extract_key_from_filename(filename)
+
+            # Test all keys against this file
             matching_keys = determine_watermarked_keys(
                 file_path, keys, threshold, tokenizer_name, n, verbose=False
             )
@@ -134,17 +136,38 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
                 'correct': actual_key is not None and detected_key == actual_key
             }
 
-            results['file_results'][filename] = file_result
-
-            # Count correct identifications if we know the actual key
-            if actual_key is not None:
-                results['total_files'] += 1
-                if file_result['correct']:
-                    results['correct_identifications'] += 1
+            return filename, file_result, actual_key
 
         except Exception as e:
-            print(f"Error analyzing {filename}: {e}")
-            results['file_results'][filename] = {'error': str(e)}
+            return filename, {'error': str(e)}, None
+
+    # Use ThreadPoolExecutor for parallel processing
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Submit all tasks
+        future_to_file = {executor.submit(
+            process_file, filename): filename for filename in text_files}
+
+        # Process results as they complete
+        for future in tqdm(
+            concurrent.futures.as_completed(future_to_file),
+            total=len(text_files),
+            desc="Analyzing files",
+            disable=not verbose
+        ):
+            try:
+                filename, file_result, actual_key = future.result()
+                results['file_results'][filename] = file_result
+
+                # Count correct identifications if we know the actual key
+                if actual_key is not None:
+                    results['total_files'] += 1
+                    if file_result.get('correct', False):
+                        results['correct_identifications'] += 1
+
+            except Exception as e:
+                filename = future_to_file[future]
+                print(f"Error analyzing {filename}: {e}")
+                results['file_results'][filename] = {'error': str(e)}
 
     # Calculate overall accuracy
     if results['total_files'] > 0:
