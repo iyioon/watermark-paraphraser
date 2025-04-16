@@ -1,9 +1,9 @@
 #!/bin/bash
-#PBS -P CS3264
+#PBS -q volta_gpu
+#PBS -N watermarp_paraphrase
+#PBS -l select=1:ncpus=5:ngpus=1:mem=100gb
+#PBS -l walltime=01:00:00
 #PBS -j oe
-#PBS -N CS3264 
-#PBS -l select=1:ncpus=1
-#PBS -l place=free:shared
 
 cd ${PBS_O_WORKDIR}
 
