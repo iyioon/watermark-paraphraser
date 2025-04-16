@@ -6,17 +6,17 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from mersenne import mersenne_rng
 from device_utils import get_device
 
-EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """<s>[INST] <<SYS>>
-You are a professional paraphrasing expert. Your task is to rewrite the provided email using different vocabulary and sentence structures while maintaining identical meaning, facts, and tone.
-<</SYS>>
+EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """
+Instruct: Paraphrase the following email while preserving its exact meaning and information. Use different vocabulary and phrasing but maintain the same structure, facts, names, dates, and professional tone.
 
-Paraphrase this email while keeping all factual information, names, dates, and professional tone exactly the same:
+Original email:
+{text}
 
-{text} [/INST]
+Output:
 """
 
 
-def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=True):
+def generate_shift(model, prompt, vocab_size, n, key, max_length=1000, verbose=True):
     rng = mersenne_rng(key)
     xi = torch.tensor([rng.rand()
                       for _ in range(n * vocab_size)]).view(n, vocab_size)
@@ -91,21 +91,8 @@ def main(args):
     torch.manual_seed(args.seed)
     device = get_device(verbose=args.verbose)
 
-    # For Llama-2-13b on 4070Ti, use 8-bit quantization
-    from transformers import BitsAndBytesConfig
-
-    quantization_config = BitsAndBytesConfig(
-        load_in_8bit=True,  # 8-bit is sufficient for 13B on 12GB VRAM
-        bnb_8bit_compute_dtype=torch.float16
-    )
-
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        quantization_config=quantization_config,
-        device_map="auto",
-        torch_dtype=torch.float16
-    )
+    model = AutoModelForCausalLM.from_pretrained(args.model).to(device)
 
     # Add the tokenizer to the model config for easy access
     model.config.tokenizer = tokenizer
