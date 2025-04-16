@@ -1,9 +1,10 @@
 #!/bin/bash
-#PBS -q volta_gpu
-#PBS -N watermarp_paraphrase
-#PBS -l select=1:ncpus=5:ngpus=1:mem=100gb
-#PBS -l walltime=01:00:00
+#PBS -P volta_pilot
 #PBS -j oe
+#PBS -N phi2_run
+#PBS -q volta_gpu
+#PBS -l select=1:ncpus=5:mem=50gb:ngpus=1:mpiprocs=1
+#PBS -l walltime=04:00:00
 
 cd ${PBS_O_WORKDIR}
 
