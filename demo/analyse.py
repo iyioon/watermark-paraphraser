@@ -120,6 +120,9 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
                     p_value = permutation_test(tokens, int(
                         key), n, len(tokens), len(tokenizer))
 
+                if verbose:
+                    print(
+                        f"File: {filename} | Key: {key} | P-value: {p_value:.6f}")
                 p_values[key] = p_value
 
             # Determine which key has the lowest p-value
