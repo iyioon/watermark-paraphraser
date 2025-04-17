@@ -1,0 +1,13 @@
+
+```markdown
+Hello team,
+
+This week, there will be no regular tutorial meetings scheduled but the lecture on January 27th will still be on as per our plan.
+
+You can start working on Tutorial 1 which I've already uploaded for you to download in the Tutorial and Project Assignments folder. Anytime you submit the finished graded solution, the deadline is set for the 4th of February at 3 PM in the Week 4 timeframe.
+
+Please note that Tutorial 1 is founded on the learning points covered in the lectures from Week 2 and Week 3. Hence, you can work on it after you have listened to the lecture on 27th.
+
+Kind Regards,
+Bryan
+```

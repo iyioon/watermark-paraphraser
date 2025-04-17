@@ -1,0 +1,82 @@
+[
+  {
+    "version": 1,
+    "key": 100,
+    "seed": 42,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key100.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 2,
+    "key": 101,
+    "seed": 43,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key101.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 3,
+    "key": 102,
+    "seed": 44,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key102.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 4,
+    "key": 103,
+    "seed": 45,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key103.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 5,
+    "key": 104,
+    "seed": 46,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key104.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 6,
+    "key": 105,
+    "seed": 47,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key105.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 7,
+    "key": 106,
+    "seed": 48,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key106.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 8,
+    "key": 107,
+    "seed": 49,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key107.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 9,
+    "key": 108,
+    "seed": 50,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key108.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 10,
+    "key": 109,
+    "seed": 51,
+    "output_file": "data/out/phi-2/email_1_paraphrases_10_keys\\email-1_key109.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  }
+]

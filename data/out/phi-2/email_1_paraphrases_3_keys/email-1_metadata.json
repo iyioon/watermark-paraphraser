@@ -1,0 +1,26 @@
+[
+  {
+    "version": 1,
+    "key": 1,
+    "seed": 42,
+    "output_file": "data/out/phi-2/email_1_paraphrases_3_keys\\email-1_key1.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 2,
+    "key": 2,
+    "seed": 43,
+    "output_file": "data/out/phi-2/email_1_paraphrases_3_keys\\email-1_key2.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  },
+  {
+    "version": 3,
+    "key": 3,
+    "seed": 44,
+    "output_file": "data/out/phi-2/email_1_paraphrases_3_keys\\email-1_key3.txt",
+    "model": "microsoft/phi-2",
+    "n": 128
+  }
+]
