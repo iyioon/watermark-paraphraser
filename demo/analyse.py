@@ -32,6 +32,7 @@ def extract_key_from_filename(filename):
 def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="microsoft/phi-2", n=256, verbose=False):
     """
     Analyze all text files in a folder to determine if they're watermarked with any of the provided keys.
+    Uses parallel processing for faster analysis.
 
     Args:
         folder_path (str): Path to the folder containing text files
@@ -88,14 +89,11 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
         'accuracy': 0.0
     }
 
-    # Process each text file
-    for filename in tqdm(text_files, desc="Analyzing files", disable=not verbose):
+    # Define the worker function to analyze a single file
+    def analyze_single_file(filename):
         file_path = os.path.join(folder_path, filename)
-
-        # Try to determine the actual key from the filename
         actual_key = extract_key_from_filename(filename)
 
-        # Test all keys against this file
         try:
             matching_keys = determine_watermarked_keys(
                 file_path, keys, threshold, tokenizer_name, n, verbose=False
@@ -137,17 +135,39 @@ def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="micro
                 'correct': actual_key is not None and detected_key == actual_key
             }
 
+            return filename, file_result, actual_key
+
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Error analyzing {filename}: {error_msg}")
+            return filename, {'error': error_msg}, actual_key
+
+    # Use ThreadPoolExecutor for parallel processing
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Submit all tasks and collect futures
+        future_results = {executor.submit(analyze_single_file, filename): filename
+                          for filename in text_files}
+
+        # Process results as they complete with progress bar
+        progress_bar = None
+        if verbose:
+            progress_bar = tqdm(total=len(text_files), desc="Analyzing files")
+
+        for future in concurrent.futures.as_completed(future_results):
+            if progress_bar:
+                progress_bar.update(1)
+
+            filename, file_result, actual_key = future.result()
             results['file_results'][filename] = file_result
 
             # Count correct identifications if we know the actual key
             if actual_key is not None:
                 results['total_files'] += 1
-                if file_result['correct']:
+                if file_result.get('correct', False):
                     results['correct_identifications'] += 1
 
-        except Exception as e:
-            print(f"Error analyzing {filename}: {e}")
-            results['file_results'][filename] = {'error': str(e)}
+        if progress_bar:
+            progress_bar.close()
 
     # Calculate overall accuracy
     if results['total_files'] > 0:
