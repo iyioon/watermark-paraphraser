@@ -13,7 +13,6 @@ Paraphrase the email in <original>, keeping every fact, date, name and the
 overall professional tone intact.  
 Return **only** the paraphrased email text; do **not** add introductions,
 explanations, sign‑offs, or additional lines.  
-Finish with the token <END>.
 
 ### <original>
 {text}
