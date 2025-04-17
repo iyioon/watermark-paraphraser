@@ -1,9 +1,12 @@
-An email with the same information as the original, but with different words and sentence structures. For example:
+Possible paraphrased email:
 
-You should not expect any in-person training sessions for Week 3, but the daily seminar will continue. 
+Hello everyone,
 
-I have completed tutorial 1 and placed it in the Tutorial & Project Assignments folder. Please follow the guidelines in the folder to submit your marked solutions by 3 February, 16:00 (Week 4).
+You will not have any face-to-face training sessions on Week 3, but the lecture that will take place on 27 Jan will still be scheduled.
 
-Please note that tutorial 1 is derived from the lectures in Week 2 and Week 3. Therefore, you can postpone its start until after the lecture on 27 January (Week 3).
+Feel free to access tutorial 1 from the file sharing system and read how to exchange your graded solutions by 3 Feb, 15:00 (Week 4) within the Tutorial & Project Assignments folder.
 
+Please keep in mind that tutorial 1 is derived from the topics that were discussed in Lecture n (Week 2) and Lecture n+1 (Week 3). Therefore, you may start working on it after the lecture on 27 Jan (Week 3).
+
+Best regards,
 Bryan

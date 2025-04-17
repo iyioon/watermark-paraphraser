@@ -7,7 +7,7 @@ from mersenne import mersenne_rng
 from device_utils import get_device
 
 EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """
-Instruct: Paraphrase the following email while preserving its exact meaning and information. Use different vocabulary and phrasing but maintain the same structure, facts, names, dates, and professional tone.
+Instruct: Paraphrase the following email while preserving its exact meaning and information. Use different vocabulary and phrasing but maintain the same structure, facts, names, dates, and professional tone. Only provide the paraphrased email without any additional comments or explanations.
 
 Original email:
 {text}
