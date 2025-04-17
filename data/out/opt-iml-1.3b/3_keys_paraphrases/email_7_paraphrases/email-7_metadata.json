@@ -1,0 +1,26 @@
+[
+  {
+    "version": 1,
+    "key": 700,
+    "seed": 42,
+    "output_file": "data/out/email_7_paraphrases/email-7_key700.txt",
+    "model": "facebook/opt-iml-1.3b",
+    "n": 256
+  },
+  {
+    "version": 2,
+    "key": 701,
+    "seed": 43,
+    "output_file": "data/out/email_7_paraphrases/email-7_key701.txt",
+    "model": "facebook/opt-iml-1.3b",
+    "n": 256
+  },
+  {
+    "version": 3,
+    "key": 702,
+    "seed": 44,
+    "output_file": "data/out/email_7_paraphrases/email-7_key702.txt",
+    "model": "facebook/opt-iml-1.3b",
+    "n": 256
+  }
+]

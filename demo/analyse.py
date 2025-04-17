@@ -268,7 +268,7 @@ def save_analysis_report(results, output_path):
     if heatmap_path:
         rel_heatmap_path = os.path.join('images', heatmap_filename)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, 'w', encoding='utf-8') as f:
         f.write("# Watermark Detection Analysis Report\n\n")
 
         # Overall summary
