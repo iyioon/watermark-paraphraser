@@ -78,7 +78,7 @@ if __name__ == '__main__':
                         help='a file containing the document to test')
     parser.add_argument('--tokenizer', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the tokenizer used by the watermarked model')
-    parser.add_argument('--n', default=256, type=int,
+    parser.add_argument('--n', default=128, type=int,
                         help='the length of the watermark sequence')
     parser.add_argument('--key', default=42, type=int,
                         help='the seed for the watermark sequence')
