@@ -8,8 +8,6 @@ import time
 import argparse
 import sys
 import os
-import concurrent.futures
-from functools import partial
 # Suppress the HuggingFace tokenizers warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -20,29 +18,8 @@ pyximport.install(reload_support=True, language_level=sys.version_info[0],
 from levenshtein import levenshtein
 
 
-def run_single_permutation(tokens, n, k, test_result, _):
-    """Run a single permutation test for parallel processing"""
-    vocab_size = tokens.shape[0]  # Get vocab size from tokens
-    xi_alternative = np.random.rand(n, vocab_size).astype(np.float32)
-    null_result = detect(tokens, n, k, xi_alternative)
+def permutation_test(tokens, key, n, k, vocab_size, n_runs=100):
 
-    # Return 1 if the null result is less than or equal to the test result, 0 otherwise
-    return null_result <= test_result
-
-
-def permutation_test(tokens, key, n, k, vocab_size, n_runs=100, max_workers=None):
-    """
-    Run permutation test with parallel processing
-
-    Args:
-        tokens: Input token sequence to test
-        key: Seed for the watermark sequence
-        n: Length of watermark sequence
-        k: Length of token sequence
-        vocab_size: Size of vocabulary
-        n_runs: Number of permutation runs
-        max_workers: Maximum number of worker processes (None uses CPU count)
-    """
     tokens = np.array(tokens, dtype=np.int32)
 
     rng = mersenne_rng(key)
@@ -50,20 +27,14 @@ def permutation_test(tokens, key, n, k, vocab_size, n_runs=100, max_workers=None
                   dtype=np.float32).reshape(n, vocab_size)
     test_result = detect(tokens, n, k, xi)
 
-    # Use ProcessPoolExecutor for parallel execution
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Create a partial function with fixed parameters
-        worker_fn = partial(run_single_permutation, tokens, n, k, test_result)
+    p_val = 0
+    # Progress bar
+    for run in tqdm(range(n_runs), desc="Running permutation tests", total=n_runs):
+        xi_alternative = np.random.rand(n, vocab_size).astype(np.float32)
+        null_result = detect(tokens, n, k, xi_alternative)
 
-        # Map the worker function over the range of runs
-        results = list(tqdm(
-            executor.map(worker_fn, range(n_runs)),
-            total=n_runs,
-            desc="Running permutation tests"
-        ))
-
-    # Sum the results (True values count as 1)
-    p_val = sum(results)
+        # assuming lower test values indicate presence of watermark
+        p_val += null_result <= test_result
 
     return (p_val + 1.0) / (n_runs + 1.0)
 
@@ -92,9 +63,9 @@ def main(args):
 
     t0 = time.time()
     pval = permutation_test(tokens, args.key, args.n,
-                            len(tokens), len(tokenizer),
-                            n_runs=args.n_runs,
-                            max_workers=args.workers)
+                            len(tokens), len(tokenizer))
+
+    treshold = 0.01
 
     print('p-value: ', pval)
     print(f'(elapsed time: {time.time()-t0}s)')
@@ -111,9 +82,5 @@ if __name__ == '__main__':
                         help='the length of the watermark sequence')
     parser.add_argument('--key', default=42, type=int,
                         help='the seed for the watermark sequence')
-    parser.add_argument('--n_runs', default=100, type=int,
-                        help='number of permutation runs')
-    parser.add_argument('--workers', default=None, type=int,
-                        help='maximum number of worker processes (default: CPU count)')
 
     main(parser.parse_args())
