@@ -30,7 +30,7 @@ def parse_args():
                         help='Directory to save the watermarked texts to')
     parser.add_argument('--model', default='microsoft/phi-2', type=str,
                         help='HuggingFace model ID for generation')
-    parser.add_argument('--n', default=256, type=int,
+    parser.add_argument('--n', default=128, type=int,
                         help='Length of the watermark sequence')
     parser.add_argument('--num-versions', default=3, type=int,
                         help='Number of paraphrased versions to generate')

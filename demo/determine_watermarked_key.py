@@ -9,7 +9,7 @@ import sys
 from detect import permutation_test
 
 
-def get_detection_p_value(text, key, tokenizer_name="microsoft/phi-2", n=256):
+def get_detection_p_value(text, key, tokenizer_name="microsoft/phi-2", n=128):
     """
     Get the p-value for detecting a watermark in text using a specific key.
 
@@ -36,7 +36,7 @@ def get_detection_p_value(text, key, tokenizer_name="microsoft/phi-2", n=256):
     return p_value
 
 
-def determine_watermarked_keys(input_file, keys, threshold=0.01, tokenizer_name="microsoft/phi-2", n=256, verbose=False):
+def determine_watermarked_keys(input_file, keys, threshold=0.01, tokenizer_name="microsoft/phi-2", n=128, verbose=False):
     """
     Determine which keys (if any) were used to watermark the input file.
     Processes keys in parallel to improve performance.
@@ -118,7 +118,7 @@ def main():
                         help='List of keys to check against the input file')
     parser.add_argument('--tokenizer', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the tokenizer used by the watermarked model')
-    parser.add_argument('--n', default=256, type=int,
+    parser.add_argument('--n', default=128, type=int,
                         help='the length of the watermark sequence')
     parser.add_argument('--threshold', type=float, default=0.01,
                         help='P-value threshold for determining watermark presence (default: 0.01)')

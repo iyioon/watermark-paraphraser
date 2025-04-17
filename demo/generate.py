@@ -16,7 +16,7 @@ Output:
 """
 
 
-def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=True, max_attempts=10):
+def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=True, max_attempts=10, seed=0):
     # Hard-coded threshold for length difference (as a percentage)
     length_threshold = 0.20  # Allow deviation from original length
 
@@ -30,8 +30,13 @@ def generate_shift(model, prompt, vocab_size, n, key, max_length=500, verbose=Tr
             print(
                 f"\n\nRetrying generation (attempt {attempt+1}/{max_attempts})...\n")
 
-        # Use a different key for each attempt
-        rng = mersenne_rng(key + attempt)
+        # Use the same key for all attempts, but add randomness with a different seed per attempt
+        # Set a different random seed for each attempt while keeping the watermark key constant
+        attempt_seed = seed + attempt
+        torch.manual_seed(attempt_seed)
+
+        # Always use the same key for watermarking
+        rng = mersenne_rng(key)
         xi = torch.tensor([rng.rand()
                           for _ in range(n * vocab_size)]).view(n, vocab_size)
         shift = torch.randint(n, (1,))
@@ -155,7 +160,7 @@ def main(args):
 
     # Generate tokens with watermarking
     generated_tokens = generate_shift(
-        model, tokens, len(tokenizer), args.n, args.key, verbose=args.verbose)[0]
+        model, tokens, len(tokenizer), args.n, args.key, verbose=args.verbose, seed=args.seed)[0]
 
     # Decode the generated tokens
     generated_text = tokenizer.decode(
@@ -178,7 +183,7 @@ if __name__ == '__main__':
                         help='a file containing text to paraphrase')
     parser.add_argument('--model', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the model to generate from')
-    parser.add_argument('--n', default=256, type=int,
+    parser.add_argument('--n', default=128, type=int,
                         help='the length of the watermark sequence')
     parser.add_argument('--key', default=42, type=int,
                         help='a key for generating the random watermark sequence')

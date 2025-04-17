@@ -30,7 +30,7 @@ def extract_key_from_filename(filename):
     return None
 
 
-def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="microsoft/phi-2", n=256, verbose=False):
+def analyze_folder(folder_path, keys=None, threshold=0.01, tokenizer_name="microsoft/phi-2", n=128, verbose=False):
     """
     Analyze all text files in a folder to determine if they're watermarked with any of the provided keys.
     Uses parallel processing for faster analysis.
@@ -335,7 +335,7 @@ def main():
                         help='List of keys to check against the files (optional)')
     parser.add_argument('--tokenizer', default='microsoft/phi-2', type=str,
                         help='a HuggingFace model id of the tokenizer used by the watermarked model')
-    parser.add_argument('--n', default=256, type=int,
+    parser.add_argument('--n', default=128, type=int,
                         help='the length of the watermark sequence')
     parser.add_argument('--threshold', type=float, default=0.01,
                         help='P-value threshold for determining watermark presence (default: 0.01)')
