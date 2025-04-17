@@ -7,19 +7,12 @@ from mersenne import mersenne_rng
 from device_utils import get_device
 
 EMAIL_PARAPHRASE_PROMPT_TEMPLATE = """
-### Instruct
-You are a professional writing assistant.  
-Paraphrase the email in <original>, keeping every fact, date, name and the
-overall professional tone intact.  
-Return **only** the paraphrased email text; do **not** add introductions,
-explanations, sign‑offs, or additional lines.  
-Finish with the token <END>.
+Instruct: Paraphrase the following email while preserving its exact meaning and information. Use different vocabulary and phrasing but maintain the same structure, facts, names, dates, and professional tone. ONLY output the paraphrased email without any additional comments or explanations.
 
-### <original>
+Original email:
 {text}
 
-### Output
-
+Output:
 """
 
 
